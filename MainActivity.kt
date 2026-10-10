@@ -1,7 +1,9 @@
 package com.example.schachhelfer
 
+import android.Manifest
 import android.content.Intent
 import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Button
 import android.widget.LinearLayout
@@ -23,8 +25,16 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+    private val notificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Ohne diese Erlaubnis zeigt Android 13+ die Benachrichtigung (mit Scan-Button) nicht an
+        if (Build.VERSION.SDK_INT >= 33) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
 
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -38,10 +48,15 @@ class MainActivity : ComponentActivity() {
             }
         })
         layout.addView(Button(this).apply {
-            text = "2. Brett scannen"
+            text = "2. Scannen (nach 4 Sekunden)"
             setOnClickListener {
-                startService(Intent(this@MainActivity, CaptureService::class.java)
-                    .setAction(CaptureService.ACTION_SCAN))
+                startService(
+                    Intent(this@MainActivity, CaptureService::class.java)
+                        .setAction(CaptureService.ACTION_SCAN)
+                        .putExtra(CaptureService.EXTRA_DELAY, 4000L)
+                )
+                // App in den Hintergrund schieben, damit die Schach-App wieder sichtbar ist
+                moveTaskToBack(true)
             }
         })
         layout.addView(Button(this).apply {

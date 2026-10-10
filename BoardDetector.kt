@@ -27,9 +27,13 @@ object BoardDetector {
     private const val EDGE_THRESHOLD = 6      // Helligkeitsunterschied (0..255), klein genug für helle/weiße Felder
     private const val MIN_CONFIDENCE = 0.4f
 
+    /** Diagnose-Text der letzten Erkennung (wird bei Fehlschlag angezeigt). */
+    @Volatile var lastDebug = ""
+
     fun detect(bmp: Bitmap): BoardRect? {
         val w = bmp.width
         val h = bmp.height
+        lastDebug = "Bild ${w}x${h}"
         val px = IntArray(w * h)
         bmp.getPixels(px, 0, w, 0, 0, w, h)
         val lum = IntArray(w * h) {
@@ -46,6 +50,7 @@ object BoardDetector {
             }
         }
         val colGrid = bestGrid(colEdges, w) ?: return null
+        lastDebug += ", Spalten ${(colGrid.confidence * 100).toInt()} %, Feld ${colGrid.square}"
         val s = colGrid.square
         val x0 = colGrid.start
 
@@ -61,6 +66,7 @@ object BoardDetector {
             }
         }
         val rowGrid = bestGrid(rowEdges, h, fixedSquare = s) ?: return null
+        lastDebug += ", Zeilen ${(rowGrid.confidence * 100).toInt()} %"
 
         val conf = minOf(colGrid.confidence, rowGrid.confidence)
         if (conf < MIN_CONFIDENCE) return null
